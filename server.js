@@ -6,7 +6,6 @@ const express   = require('express');
 const cors      = require('cors');
 const helmet    = require('helmet');
 const apiRoutes = require('./routes/apiRoutes');
-const { pool, testConnection } = require('./config/db'); // Imported pool here to execute structural migrations
 
 const app  = express();
 const PORT = parseInt(process.env.PORT, 10) || 3000;
@@ -17,9 +16,6 @@ app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*', methods: ['GET', 'POST', 'DELETE', 'OPTIONS'] }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
-console.log("USER:", process.env.DB_USER);
-console.log("PASSWORD:", process.env.DB_PASSWORD);
 
 // ── Base Routes ───────────────────────────────────────────────
 app.get('/', (_req, res) => res.json({
@@ -58,6 +54,12 @@ app.use((err, _req, res, _next) => {
 // ── Bootstrap ─────────────────────────────────────────────────
 async function bootstrap() {
   try {
+    // 💡 DELAY IMPORT: This ensures Render loads environment variables before db.js executes!
+    const { pool, testConnection } = require('./config/db');
+
+    console.log("USER:", process.env.DB_USER);
+    console.log("PASSWORD:", process.env.DB_PASSWORD ? "🔒 STAMPED/FOUND" : "❌ UNDEFINED");
+
     // 1. Establish initial connection
     await testConnection();
 
