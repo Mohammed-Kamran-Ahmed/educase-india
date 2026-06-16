@@ -1,0 +1,37 @@
+{
+  "name": "github-profile-analyzer",
+  "version": "1.0.0",
+  "description": "Production-grade GitHub Profile Analyzer API using Express.js and MySQL",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node --dns-result-order=ipv4first server.js",
+  "dev": "nodemon --dns-result-order=ipv4first server.js",
+    "lint": "eslint . --ext .js"
+  },
+  "keywords": [
+    "github",
+    "api",
+    "analyzer",
+    "express",
+    "mysql",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "mysql2": "^3.11.5",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "info": {
+    "_postman_id": "github-profile-analyzer-collection",
+    "name": "GitHub Profile Analyzer API",
+    "description": "Complete Postman collection for the GitHub Profile Analyzer REST API.\n\nSet the `base_url` collection variable to your server URL before running requests.\n\nDefault: http://localhost:3000",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string",
+      "description": "Base URL of the running API server"
+    },
+    {
+      "key": "username",
+      "value": "torvalds",
+      "type": "string",
+      "description": "GitHub username to test with"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏠 Root — API Discovery",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"]
+        },
+        "description": "Returns service info and a list of all available endpoints."
+      }
+    },
+    {
+      "name": "❤️ Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Liveness probe — use this with load balancers and uptime monitors."
+      }
+    },
+    {
+      "name": "🔍 Analyze Profile (Fresh / API)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/analyze/{{username}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "analyze", "{{username}}"]
+        },
+        "description": "Triggers a GitHub profile analysis for the given username.\n\nIf a fresh record (< 24h) exists in MySQL, returns cached data.\nOtherwise, fetches from the GitHub API, computes insights, upserts into DB, and returns the result."
+      }
+    },
+    {
+      "name": "🔍 Analyze Profile (Another User)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/analyze/sindresorhus",
+          "host": ["{{base_url}}"],
+          "path": ["api", "analyze", "sindresorhus"]
+        },
+        "description": "Analyze a second profile to populate the list endpoint."
+      }
+    },
+    {
+      "name": "📋 Get All Profiles (Default Pagination)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/profiles",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profiles"]
+        },
+        "description": "Returns a paginated list of all analyzed profiles. Default: page=1, limit=20."
+      }
+    },
+    {
+      "name": "📋 Get All Profiles (Custom Pagination)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/profiles?page=1&limit=5",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profiles"],
+          "query": [
+            { "key": "page",  "value": "1" },
+            { "key": "limit", "value": "5" }
+          ]
+        },
+        "description": "First page, 5 records per page."
+      }
+    },
+    {
+      "name": "📋 Get All Profiles (Search Filter)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/profiles?search=linus",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profiles"],
+          "query": [
+            { "key": "search", "value": "linus" }
+          ]
+        },
+        "description": "Filter profiles by username or full name."
+      }
+    },
+    {
+      "name": "👤 Get Single Profile",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/profiles/{{username}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profiles", "{{username}}"]
+        },
+        "description": "Returns full analytical data including language breakdown, top repositories, and audit trail for a single username.\n\nReturns 404 if the profile has never been analyzed."
+      }
+    },
+    {
+      "name": "📊 Global Analytics Stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/stats",
+          "host": ["{{base_url}}"],
+          "path": ["api", "stats"]
+        },
+        "description": "Returns aggregate statistics across all analyzed profiles: total profiles, stars indexed, highest engagement score, most common language, cache hit rate, etc."
+      }
+    },
+    {
+      "name": "🗑️ Delete Profile",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/profiles/{{username}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profiles", "{{username}}"]
+        },
+        "description": "Removes the profile and its audit logs from MySQL. The next POST /api/analyze/:username will force a fresh GitHub API fetch."
+      }
+    },
+    {
+      "name": "❌ Analyze — Invalid Username Format (400)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/analyze/this-is-a-very-long-invalid-username-that-exceeds-39-chars",
+          "host": ["{{base_url}}"],
+          "path": ["api", "analyze", "this-is-a-very-long-invalid-username-that-exceeds-39-chars"]
+        },
+        "description": "Should return HTTP 400 — invalid GitHub username format."
+      }
+    },
+    {
+      "name": "❌ Analyze — Non-Existent User (404)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/analyze/this-user-definitely-does-not-exist-xyz999",
+          "host": ["{{base_url}}"],
+          "path": ["api", "analyze", "this-user-definitely-does-not-exist-xyz999"]
+        },
+        "description": "Should return HTTP 404 — GitHub user not found."
+      }
+    },
+    {
+      "name": "❌ Get Profile — Not in DB (404)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/profiles/never-analyzed-user",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profiles", "never-analyzed-user"]
+        },
+        "description": "Should return HTTP 404 — profile not found in database."
+      }
+    },
+    {
+      "name": "❌ Unknown Route (404)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/unknown-endpoint",
+          "host": ["{{base_url}}"],
+          "path": ["api", "unknown-endpoint"]
+        },
+        "description": "Should return a 404 with a list of available endpoints."
+      }
+    }
+  ]
+}
