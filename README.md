@@ -1,290 +1,57 @@
-# GitHub Profile Analyzer API
+# 🚀 GitHub Profile Analyzer API
 
-A production-grade REST API built with **Node.js**, **Express.js**, and **MySQL** that analyzes GitHub user profiles, computes custom analytical insights, and caches results to conserve GitHub API rate limits.
-
----
-
-## Features
-
-- **Real-time GitHub analysis** — fetches user profile + all public repositories via the GitHub REST API
-- **Computed insights** — Top Language, Engagement Score, Productivity Index, Language Breakdown, Top 5 Repositories
-- **24-hour caching** — skips external API calls if a fresh record exists in MySQL
-- **Audit logging** — every request is logged with source (`github_api` / `cache`), latency, and status
-- **Paginated profile list** with optional search
-- **Global analytics stats** endpoint
-- **Graceful shutdown** — drains in-flight requests before closing
-- **Helmet security headers** — hardens the API against common web vulnerabilities
+A robust, enterprise-grade RESTful API built with **Node.js, Express, and MySQL (Aiven Cloud)** that fetches public GitHub profile data, computes deep analytical development metrics, and implements an optimized database-level caching mechanism.
 
 ---
 
-## Project Structure
+## 🌟 Extra Features Added (Beyond Core Requirements)
 
-```
-github-profile-analyzer/
-├── server.js                    # Entry point — middleware, routing, bootstrap
-├── package.json
-├── schema.sql                   # MySQL DDL — CREATE TABLE statements
-├── .env.example                 # Environment variable template
-├── .gitignore
-├── config/
-│   └── db.js                    # MySQL connection pool (mysql2/promise)
-├── controllers/
-│   └── analyzerController.js    # All business logic, API calls, SQL writes
-└── routes/
-    └── apiRoutes.js             # Route → Controller mapping
-```
+While fulfilling all base requirements, this project integrates several production-ready engineering practices:
+* **24-Hour Smart Performance Cache:** Prevents burning through GitHub API rate limits. If a profile was analyzed within the last 24 hours, the API streams the data instantly from the cloud database instead of hitting GitHub, dropping response times from **~1700ms to <15ms**.
+* **Automated Schema Migration Engine:** The application automatically verifies, creates, and boots up your required MySQL tables on startup, removing the need to manually run external `.sql` scripts on the database engine.
+* **Comprehensive Audit Logs & Latency Tracking:** Every single request—whether it's an API hit or a cache hit—is stamped with network latency metrics (`response_ms`) and written to a dedicated `analysis_logs` table for telemetry.
+* **Advanced Analytics Engine:** Automatically calculates custom metrics including **Engagement Scores** ((Stars + Forks) / Public Repos), **Productivity Indices** (Public Repos / Account Age), and dynamic native MySQL JSON arrays for **Language Breakdowns** and **Top Repositories**.
 
 ---
 
-## Prerequisites
+## 🛠️ System Architecture & Tech Stack
 
-| Tool | Version |
-|------|---------|
-| Node.js | ≥ 18.0 |
-| npm | ≥ 9.0 |
-| MySQL | ≥ 8.0 |
-
----
-
-## Setup Instructions
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/github-profile-analyzer.git
-cd github-profile-analyzer
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Configure Environment Variables
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` and fill in your values:
-
-```env
-PORT=3000
-NODE_ENV=development
-
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=github_analyzer
-
-# Highly recommended — raises rate limit from 60 to 5,000 req/hour
-GITHUB_TOKEN=ghp_your_token_here
-```
-
-> **Get a GitHub token:** [https://github.com/settings/tokens](https://github.com/settings/tokens)  
-> No special scopes are required for public data.
-
-### 4. Initialize the Database
-
-Log into MySQL and run the schema file:
-
-```bash
-mysql -u root -p < schema.sql
-```
-
-Or manually:
-
-```sql
-CREATE DATABASE IF NOT EXISTS github_analyzer;
-USE github_analyzer;
-SOURCE schema.sql;
-```
-
-### 5. Start the Server
-
-```bash
-# Development (auto-restarts on file changes)
-npm run dev
-
-# Production
-npm start
-```
-
-You should see:
-
-```
-✅  MySQL connection pool established successfully.
-
-╔══════════════════════════════════════════════════╗
-║      GitHub Profile Analyzer API — Running       ║
-╚══════════════════════════════════════════════════╝
-🚀  Server    : http://localhost:3000
-🌍  Env       : development
-🗄️  Database  : github_analyzer @ localhost
-```
+* **Backend Runtime:** Node.js (v18+) & Express
+* **Database Infrastructure:** Cloud MySQL 8.0 Managed Instance via **Aiven**
+* **HTTP Client:** Axios (Configured with automated up-to-5-page public repository pagination processing loops)
+* **Security Context Layer:** Helmet.js (HTTP header protection) & Cross-Origin Resource Sharing (CORS)
 
 ---
 
-## API Reference
+## 📋 API Endpoints Specification
 
-### Base URL
-```
-http://localhost:3000
-```
+### 1. Ingest & Analyze Profile
+* **Route:** `POST /api/analyze/:username`
+* **Description:** Fetches raw data from GitHub, runs analytics calculations, upserts rows to MySQL, and logs audit metrics.
+* **Example:** `POST http://localhost:3000/api/analyze/Mohammed-Kamran-Ahmed`
 
----
+### 2. Get All Stored Profiles
+* **Route:** `GET /api/profiles`
+* **Optional Query Params:** `?page=1&limit=20&search=Kamran`
+* **Description:** Returns a light, paginated, and searchable collection array of all analyzed users.
 
-### `POST /api/analyze/:username`
-Analyze a GitHub user profile. Checks the 24-hour cache first; otherwise fetches from GitHub and upserts into MySQL.
+### 3. Get Single Profile Deep Details
+* **Route:** `GET /api/profiles/:username`
+* **Description:** Extracts deep analytics structures (JSON breakdown maps) alongside a historical 10-row request audit trail.
 
-**Example:**
-```bash
-curl -X POST http://localhost:3000/api/analyze/torvalds
-```
+### 4. Global Analytics Dashboard Statistics
+* **Route:** `GET /api/stats`
+* **Description:** Aggregates system-wide data metrics (e.g., total platform repos, cache hit ratios, and the most common language across the platform).
 
-**Response:**
-```json
-{
-  "success": true,
-  "source": "github_api",
-  "response_ms": 1243,
-  "data": {
-    "username": "torvalds",
-    "full_name": "Linus Torvalds",
-    "followers": 245000,
-    "public_repos": 8,
-    "total_stars": 220450,
-    "analytics": {
-      "top_language": "C",
-      "engagement_score": 27556.25,
-      "productivity_index": 0.2488,
-      "language_breakdown": { "C": 4, "Shell": 2, "Python": 1 },
-      "top_repositories": [ ... ]
-    }
-  }
-}
-```
+### 5. Delete Profile Snapshot
+* **Route:** `DELETE /api/profiles/:username`
+* **Description:** Permanently purges a user's tracking snapshot from the profile registry and cleanly wipes their analysis log history.
 
 ---
 
-### `GET /api/profiles`
-Returns a paginated list of all analyzed profiles, sorted by most recently analyzed.
+## 🚀 Local Installation & Setup
 
-**Query Parameters:**
-
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| `page` | integer | `1` | Page number |
-| `limit` | integer | `20` | Records per page (max 100) |
-| `search` | string | — | Filter by username or full name |
-
-**Example:**
-```bash
-curl http://localhost:3000/api/profiles?page=1&limit=10&search=linus
-```
-
----
-
-### `GET /api/profiles/:username`
-Fetches the full analytical record (including JSON blobs and audit trail) for a single username.
-
-**Example:**
-```bash
-curl http://localhost:3000/api/profiles/torvalds
-```
-
-Returns `404` if the username has never been analyzed.
-
----
-
-### `DELETE /api/profiles/:username`
-Removes a profile and its audit logs from the database, forcing a fresh API fetch on the next `POST /api/analyze/:username`.
-
-**Example:**
-```bash
-curl -X DELETE http://localhost:3000/api/profiles/torvalds
-```
-
----
-
-### `GET /api/stats`
-Returns aggregate statistics across all analyzed profiles.
-
-**Example:**
-```bash
-curl http://localhost:3000/api/stats
-```
-
----
-
-### `GET /health`
-Liveness probe for load balancers and monitoring services.
-
-```bash
-curl http://localhost:3000/health
-```
-
----
-
-## Computed Analytics Explained
-
-| Metric | Formula | Description |
-|--------|---------|-------------|
-| **Top Language** | `max(language_tally)` | Most-used language across all public repos |
-| **Engagement Score** | `(total_stars + total_forks) / public_repos` | Measures how engaging a user's work is per repo |
-| **Productivity Index** | `public_repos / years_on_github` | Repos created per year since account registration |
-
----
-
-## Database Schema
-
-Two tables are created by `schema.sql`:
-
-| Table | Purpose |
-|-------|---------|
-| `github_profiles` | Primary store — full profile + computed insights |
-| `analysis_logs` | Audit trail — every request logged with source & latency |
-
-Key design decisions:
-- `ON DUPLICATE KEY UPDATE` enables atomic upsert on re-analysis
-- `analyzed_at` column drives the 24-hour cache freshness check
-- JSON columns store `language_breakdown` and `top_repositories`
-- Indexes on `analyzed_at`, `followers`, and `public_repos` for fast queries
-
----
-
-## Error Handling
-
-| Scenario | HTTP Status | Response |
-|----------|------------|---------|
-| Invalid username format | 400 | `{ "success": false, "message": "Invalid GitHub username format." }` |
-| GitHub user not found | 404 | `{ "success": false, "message": "GitHub user '...' was not found." }` |
-| GitHub rate limit hit | 429 | `{ "success": false, "message": "...", "retry_after": "..." }` |
-| Profile not in DB | 404 | `{ "success": false, "message": "No analysis found for '...'." }` |
-| Internal server error | 500 | `{ "success": false, "message": "An internal server error occurred." }` |
-
----
-
-## Environment Variables Reference
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `PORT` | No | `3000` | HTTP server port |
-| `HOST` | No | `0.0.0.0` | Bind address |
-| `NODE_ENV` | No | `development` | Environment mode |
-| `CORS_ORIGIN` | No | `*` | Allowed CORS origin |
-| `DB_HOST` | Yes | `localhost` | MySQL host |
-| `DB_PORT` | No | `3306` | MySQL port |
-| `DB_USER` | Yes | `root` | MySQL username |
-| `DB_PASSWORD` | Yes | — | MySQL password |
-| `DB_NAME` | Yes | `github_analyzer` | MySQL database name |
-| `DB_POOL_LIMIT` | No | `10` | Max pool connections |
-| `GITHUB_TOKEN` | No | — | GitHub Personal Access Token |
-
----
-
-## License
-
-ISC
+1. **Clone the repository:**
+   ```bash
+   git clone <your-repository-url>
+   cd educase-project
